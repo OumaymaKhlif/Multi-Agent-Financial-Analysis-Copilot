@@ -1,0 +1,6 @@
+# Streamlit Interface
+streamlit
+requests
+
+fpdf2
+markdown

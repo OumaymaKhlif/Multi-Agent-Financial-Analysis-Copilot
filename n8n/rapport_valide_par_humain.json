@@ -1,0 +1,108 @@
+{
+  "name": "Rapport validé par l'humain",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "report-approved",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.2,
+      "position": [
+        -224,
+        0
+      ],
+      "id": "ee1fa8e7-92c7-4e89-862b-eabc633a7a3c",
+      "name": "Webhook",
+      "webhookId": "71c4def1-a907-4294-83b3-53b5e26a5f41"
+    },
+    {
+      "parameters": {
+        "fromEmail": "sender@example.com",
+        "toEmail": "recipient@example.com",
+        "subject": "Rapport financier Microsoft validé",
+        "html": "<p>Bonjour,</p>\n<p>L'analyse financière de Microsoft a été validée. Le rapport est joint en PDF.</p>\n<p>Cordialement</p>",
+        "options": {
+          "fileAttachments": "data"
+        }
+      },
+      "type": "n8n-nodes-base.emailSend",
+      "typeVersion": 2.1,
+      "position": [
+        240,
+        0
+      ],
+      "id": "7be28ca6-ec13-41c0-a013-d1adde279d09",
+      "name": "Send an Email",
+      "webhookId": "41eb0e05-a374-4cc2-a30f-ef56c7c226fa",
+      "credentials": {
+        "smtp": {
+          "id": "",
+          "name": "SMTP account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://backend:8000/analysis/pdf",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { \"report\": $json.body.report } }}",
+        "options": {
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        0,
+        0
+      ],
+      "id": "efe08f6a-cef7-448d-a681-4650d54d9ba4",
+      "name": "HTTP Request"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Send an Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0dbcbc0a-6f46-48b2-a431-e2e8df4bec9c",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "QMmqkLw9sfP2XLsW",
+  "tags": []
+}

@@ -1,0 +1,160 @@
+
+services:
+
+  database:
+    image: pgvector/pgvector:pg17
+    container_name: financial_db
+    environment:
+      POSTGRES_DB: financial_copilot
+      POSTGRES_USER: copilot_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U copilot_user -d financial_copilot"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - copilot_network
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: financial_n8n
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+    networks:
+      - copilot_network
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: financial_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - database
+    networks:
+      - copilot_network
+
+  backend:
+    # Construire l'image depuis le dossier backend
+    build: ./backend
+
+    # Nom du conteneur
+    container_name: financial_backend
+
+    # Exposer l'API sur le port 8000
+    ports:
+      - "8000:8000"
+
+    # Transmettre les paramètres de connexion PostgreSQL
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: financial_copilot
+      DB_USER: copilot_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Clé et modèle utilisés par les agents IA
+      GROQ_API_KEY: ${GROQ_API_KEY}
+      GROQ_MODEL: ${GROQ_MODEL:-openai/gpt-oss-120b}
+      
+    # LangSmith
+      LANGSMITH_TRACING: ${LANGSMITH_TRACING}
+      LANGSMITH_API_KEY: ${LANGSMITH_API_KEY}
+      LANGSMITH_PROJECT: ${LANGSMITH_PROJECT}
+
+    # Clé secrète qui signe les liens pour les rendre infalsifiables
+      APPROVAL_SECRET: ${APPROVAL_SECRET}
+      PUBLIC_BASE_URL: ${PUBLIC_BASE_URL}
+
+      N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
+
+    # Attendre que PostgreSQL soit prêt
+    depends_on:
+      database:
+        condition: service_healthy
+
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+              
+    # Utiliser le réseau Docker du projet
+    networks:
+      - copilot_network
+    
+
+  # MCP Server : expose les outils aux agents IA
+  mcp-server:
+    build: ./backend
+    container_name: financial_mcp
+
+    # Démarrer notre serveur MCP
+    command: python -m app.mcp.server
+
+    # Exposer MCP sur le port 8001
+    ports:
+      - "8001:8001"
+
+    # Configuration de connexion PostgreSQL
+    environment:
+      DB_HOST: database
+      DB_PORT: 5432
+      DB_NAME: financial_copilot
+      DB_USER: copilot_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+
+    # Attendre que PostgreSQL soit prêt
+    depends_on:
+      database:
+        condition: service_healthy
+
+    # Autoriser l'utilisation du GPU pour Qwen3
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+    networks:
+      - copilot_network
+
+  frontend:
+      build: ./frontend
+      container_name: financial_frontend
+      ports:
+        - "8501:8501"
+      environment:
+        API_URL: http://backend:8000
+      depends_on:
+        - backend
+      networks:
+      - copilot_network
+
+volumes:
+  postgres_data:
+  n8n_data:
+  pgadmin_data:
+
+networks:
+  copilot_network:
+    driver: bridge
+
+
+
+
+

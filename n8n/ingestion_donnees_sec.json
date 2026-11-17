@@ -1,0 +1,171 @@
+{
+  "name": "Ingestion des données SEC",
+  "nodes": [
+    {
+      "parameters": {
+        "url": "https://data.sec.gov/submissions/CIK0000789019.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "FinancialAnalysisCopilot your-email@example.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        16,
+        -208
+      ],
+      "id": "d9904a1f-bfa2-436c-83a6-b528172158b0",
+      "name": "HTTP Request Submissions"
+    },
+    {
+      "parameters": {
+        "url": "https://data.sec.gov/api/xbrl/companyfacts/CIK0000789019.json",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "FinancialAnalysisCopilot your-email@example.com"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        16,
+        0
+      ],
+      "id": "bcb9a80c-177c-4b10-9ddf-fe5316a8fd0c",
+      "name": "HTTP Request Company Facts"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO sec_raw_data (source, company, ticker, payload)\nVALUES ('submissions', 'MICROSOFT CORP', 'MSFT', $1::jsonb);",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json) }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        272,
+        -208
+      ],
+      "id": "d898f9e4-34ee-481b-9a67-b8d22f041fde",
+      "name": "SQL query Insert - submissions",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO sec_raw_data (source, company, ticker, payload)\nVALUES ('companyfacts', 'MICROSOFT CORP', 'MSFT', $1::jsonb);",
+        "options": {
+          "queryReplacement": "={{ JSON.stringify($json)}}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.8,
+      "position": [
+        288,
+        0
+      ],
+      "id": "8087a98b-94fd-4e82-b918-a51bf2233336",
+      "name": "SQL query Insert Company Facts",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 6
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -304,
+        -96
+      ],
+      "id": "d6c86313-8393-42a5-8a93-b60ce61a202b",
+      "name": "Schedule Trigger"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "HTTP Request Submissions": {
+      "main": [
+        [
+          {
+            "node": "SQL query Insert - submissions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request Company Facts": {
+      "main": [
+        [
+          {
+            "node": "SQL query Insert Company Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Submissions",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request Company Facts",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "f922015a-4ba4-4d83-ad3d-fd73bcbb4398",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  },
+  "nodeGroups": [],
+  "id": "Yxwjh6UBs9uKLO7t",
+  "tags": []
+}

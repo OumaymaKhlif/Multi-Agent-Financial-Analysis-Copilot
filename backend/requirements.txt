@@ -1,0 +1,50 @@
+# API 
+fastapi               
+# Exécuter le serveur FastAPI
+uvicorn                  
+
+# Connexion à PostgreSQL
+psycopg[binary]          
+
+# Framework RAG et traitement des documents
+langchain                # Construire les composants du système RAG
+langchain-text-splitters # Découper les documents en chunks
+langchain-huggingface    # Utiliser les modèles Hugging Face avec LangChain
+sentence-transformers    # Générer des embeddings à partir des textes
+beautifulsoup4           # Extraire le texte des documents HTML
+requests                 # Télécharger les données depuis les API et sites web
+
+# Stockage et Recherche vectorielle
+pgvector                 
+
+# Modèles d'intelligence artificielle
+transformers>=4.51.0    
+
+
+# Définir PyPI comme dépot principal 
+# PyPI (Python Package Index) : c'est le dépôt officiel où Python télécharge les bibliothèques
+--index-url https://pypi.org/simple
+
+# PyTorch avec accélération GPU NVIDIA (CUDA 12.6)
+# ajoute le dépôt de PyTorch compatible CUDA 12.6
+--extra-index-url https://download.pytorch.org/whl/cu126
+torch==2.7.1+cu126       # Framework de calcul utilisé pour exécuter les modèles d'IA
+
+# Model Context Protocol (MCP)
+mcp[cli]>=2,<3           
+
+# Système Multi-Agent
+# Orchestration des agents IA
+langgraph
+
+# Connexion aux modèles LLM de Groq
+langchain-groq
+
+# Adaptateur permettant à LangChain d'utiliser les outils MCP
+langchain[mcp]>=1.4.0
+
+fpdf2
+markdown
+
+pytest
+httpx
