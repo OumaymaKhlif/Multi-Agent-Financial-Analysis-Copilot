@@ -81,7 +81,9 @@
 
 ## 🏗 Architecture
 
-![Architecture](docs/architecture.png)
+<p align="center">
+  <img src="docs/architecture.png" alt="Architecture">
+</p>
 
 Le système est organisé en couches :
 
