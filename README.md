@@ -137,11 +137,6 @@ Le système est organisé en couches :
 
 Le workflow LangGraph enchaîne les agents suivants :
 
-```
-Planner → Research → Financial Analyst → Risk Verifier → Supervisor ──┬─→ Report Generator
-                                                                      └─→ Human Review ─→ Report Generator / Fin
-```
-
 | # | Agent | Responsabilités |
 | --- | --- | --- |
 | 1 | **Planner** | Comprend la demande, la décompose en tâches, détermine les agents et outils à mobiliser |
@@ -150,11 +145,6 @@ Planner → Research → Financial Analyst → Risk Verifier → Supervisor ─�
 | 4 | **Risk Verifier** | Vérifie la cohérence des chiffres, détecte les contradictions et les informations non fiables |
 | 5 | **Supervisor** | Décide `APPROVED_FOR_DRAFT` ou `HUMAN_REVIEW_REQUIRED` |
 | 6 | **Report Generator** | Consolide les résultats validés en un rapport structuré avec sources |
-
-**Principes de fiabilité :**
-- Les KPI sont **calculés en Python** à partir des données PostgreSQL puis fournis aux agents.
-- Les agents n'utilisent que les données disponibles et écrivent *« Data not available »* en cas d'absence.
-- La température du LLM est fixée à `0` pour des résultats reproductibles.
 
 ---
 
