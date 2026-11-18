@@ -37,13 +37,11 @@
 9. [Automatisations n8n](#-automatisations-n8n)
 10. [Human-in-the-Loop](#-human-in-the-loop-hitl)
 11. [Observabilité et évaluation (LangSmith)](#-observabilité-et-évaluation-langsmith)
-12. [Structure du projet](#-structure-du-projet)
-13. [Installation](#-installation)
-14. [Utilisation](#-utilisation)
-15. [API](#-api)
-16. [Tests](#-tests)
-17. [Sécurité](#-sécurité)
-18. [Limites et perspectives](#-limites-et-perspectives)
+12. [Installation](#-installation)
+13. [Utilisation](#-utilisation)
+14. [API](#-api)
+15. [Tests](#-tests)
+16. [Limites et perspectives](#-limites-et-perspectives)
 
 ---
 
@@ -172,10 +170,6 @@ Rapport annuel SEC (HTML)
    → Stockage PostgreSQL + pgvector (index HNSW, similarité cosinus)
    → Recherche sémantique + réponse avec sources
 ```
-
-- Ingestion : `backend/app/rag/ingest.py`
-- Recherche : `backend/app/rag/retriever.py`
-
 ---
 
 ## 📈 Données financières et KPI
@@ -189,20 +183,7 @@ Rapport annuel SEC (HTML)
 | 8-K | Événements importants | Actualités réglementaires |
 | XBRL | Indicateurs structurés | Calcul des ratios |
 
-**Chaîne de traitement PostgreSQL :**
-
-| Objet | Rôle |
-| --- | --- |
-| `sec_raw_data` | JSON brut SEC (submissions, companyfacts) alimenté par n8n |
-| `financial_indicators` | Une ligne = un indicateur + une période + une déclaration SEC |
-| `financial_indicators_clean` (vue) | Garde la déclaration la plus récente par indicateur et période |
-| `financial_analysis_annual` (vue) | Un exercice fiscal par ligne avec les KPI calculés |
-| `document_chunks` | Chunks du rapport + embeddings vectoriels |
-
 **KPI calculés :** croissance du chiffre d'affaires, marge nette, marge opérationnelle, ROA, ROE (et ratio de fonds propres, passifs totaux dans l'analyse).
-
-Les scripts SQL sont dans [`infrastructure/postgres/init.sql`](infrastructure/postgres/init.sql).
-
 ---
 
 ## ⚙️ Automatisations n8n
@@ -236,13 +217,6 @@ Analyse du lundi ─→ Supervisor
                          │                         │
               Rapport + PDF par email            Arrêt
 ```
-
-**Choix de conception (niveau production) :**
-- **Liens signés HMAC-SHA256** avec expiration (24 h) : impossible de falsifier une décision.
-- **Page de confirmation + POST** : les scanners d'emails qui ouvrent automatiquement les liens ne peuvent pas approuver à la place de l'humain.
-- **Checkpointer LangGraph** : l'état complet est conservé sous un `thread_id` pendant la pause.
-- Validation aussi possible depuis l'interface **Streamlit**.
-
 ---
 
 ## 🔭 Observabilité et évaluation (LangSmith)
@@ -252,53 +226,6 @@ Analyse du lundi ─→ Supervisor
 | **Tracing** | Chaque exécution est tracée étape par étape (agents, outils MCP, appels LLM, latence, tokens) |
 | **Datasets** | Jeu de questions de référence : `financial-copilot-eval` |
 | **Experiments** | Exécution du workflow sur le dataset pour comparer les versions |
-
-**Évaluateurs automatiques** (`backend/app/evaluation/evaluators.py`) :
-
-| Évaluateur | Contrôle |
-| --- | --- |
-| `numbers_match` | Les chiffres du rapport correspondent aux KPI calculés |
-| `report_not_empty` | Le rapport n'est pas vide |
-| `no_forbidden_words` | Aucun terme interdit (ex. promesses ou jugements non étayés) |
-| `no_unneeded_review` | Pas de validation humaine inutile |
-
-Lancer l'évaluation :
-
-```bash
-docker compose exec backend python -m app.evaluation.run_eval
-```
-
----
-
-## 🗂 Structure du projet
-
-```
-Financial-Analysis-Copilot/
-├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
-│   └── app/
-│       ├── main.py                  # Application FastAPI
-│       ├── api/analysis.py          # Routes d'analyse, de validation et de PDF
-│       ├── graph/                   # Système multi-agents (LangGraph)
-│       │   ├── workflow.py          #   Graphe, HITL, checkpointer
-│       │   ├── agents.py            #   Prompts des agents
-│       │   ├── state.py             #   État partagé
-│       │   └── llm.py               #   Configuration du LLM
-│       ├── mcp/                     # Serveur et client MCP
-│       ├── rag/                     # Ingestion et recherche sémantique
-│       ├── services/                # Collecte SEC, extraction, PDF, tokens
-│       ├── evaluation/              # Évaluateurs et script LangSmith
-│       └── tests/                   # Tests pytest
-├── frontend/                        # Interface Streamlit
-├── workflows/n8n/                   # Workflows n8n exportés
-├── infrastructure/postgres/         # Scripts SQL
-├── docs/architecture.png            # Schéma d'architecture
-├── docker-compose.yml
-├── .env.example
-└── README.md
-```
-
 ---
 
 ## 🚀 Installation
@@ -326,40 +253,15 @@ cd Financial-Analysis-Copilot
 cp .env.example .env
 ```
 
-Renseigner les variables :
-
-| Variable | Description |
-| --- | --- |
-| `POSTGRES_PASSWORD` | Mot de passe PostgreSQL |
-| `PGADMIN_EMAIL` / `PGADMIN_PASSWORD` | Identifiants pgAdmin |
-| `GROQ_API_KEY` | Clé API Groq |
-| `GROQ_MODEL` | Modèle Groq (défaut : `openai/gpt-oss-120b`) |
-| `LANGSMITH_TRACING` | `true` pour activer le tracing |
-| `LANGSMITH_API_KEY` | Clé API LangSmith |
-| `LANGSMITH_PROJECT` | Nom du projet LangSmith |
-| `APPROVAL_SECRET` | Clé secrète qui signe les liens d'approbation |
-| `PUBLIC_BASE_URL` | URL publique du backend (en production : `https://votre-domaine`) |
-| `N8N_WEBHOOK_URL` | Webhook n8n du rapport validé (`http://n8n:5678/webhook/report-approved`) |
-
-Générer `APPROVAL_SECRET` :
-
-```bash
-python -c "import secrets; print(secrets.token_hex(32))"
-```
-
 **3. Démarrer les conteneurs**
 
 ```bash
 docker compose up -d --build
 ```
 
-> Le premier démarrage est long : installation de PyTorch et téléchargement du modèle Qwen3.
-
 **4. Créer le schéma de base de données**
 
 Dans pgAdmin (`http://localhost:5050`), ouvrir le **Query Tool** et exécuter [`infrastructure/postgres/init.sql`](infrastructure/postgres/init.sql).
-
-> L'extraction des indicateurs (étape 3 du script) nécessite que `sec_raw_data` contienne déjà les données SEC : exécuter d'abord le workflow n8n d'ingestion (étape 5), puis relancer cette partie du script.
 
 **5. Importer les workflows n8n**
 
@@ -372,13 +274,6 @@ Dans n8n (`http://localhost:5678`) : **Import from file** pour chacun des 3 fich
 
 ```bash
 docker compose exec backend python -m app.rag.ingest
-```
-
-**7. Vérifier**
-
-```bash
-docker compose ps
-docker compose exec backend python -m pytest app/tests -v
 ```
 
 ### Services et ports
@@ -438,23 +333,11 @@ docker compose exec backend python -m pytest app/tests -v
 
 ---
 
-## 🔐 Sécurité
-
-- Les secrets (`.env`) ne sont **jamais versionnés** (`.gitignore`).
-- Liens de validation **signés (HMAC-SHA256)** et **expirants**.
-- Décision par **POST** après confirmation (protection contre les scanners d'emails).
-- En production : utiliser **HTTPS**, un reverse proxy, et ne pas exposer PostgreSQL, pgAdmin et n8n publiquement.
-
----
-
 ## 🔮 Limites et perspectives
 
 - **Checkpointer persistant** : remplacer `MemorySaver` (RAM) par `PostgresSaver` pour conserver les analyses en pause après un redémarrage du backend.
-- **Multi-entreprises** : généraliser au-delà de Microsoft.
-- **Sources supplémentaires** : actualités et données de marché en temps réel via de nouveaux outils MCP.
 - **Authentification** des utilisateurs et gestion des rôles pour la validation.
 - **Lien à usage unique** pour les décisions et journal d'audit des validations.
-- **Évaluation étendue** : plus de questions dans le dataset LangSmith.
 
 ---
 
