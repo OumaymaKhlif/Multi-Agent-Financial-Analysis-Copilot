@@ -47,7 +47,7 @@
 
 ## 🎯 Présentation
 
-**Multi-Agent Financial Analysis Copilot** automatise une grande partie du processus d'analyse financière d'une entreprise (cas d'usage actuel : **Microsoft, ticker MSFT**) :
+**FinCopilot** automatise une grande partie du processus d'analyse financière d'une entreprise (cas d'usage actuel : **Microsoft, ticker MSFT**) :
 
 - **Collecte** des informations issues de plusieurs sources : rapports financiers SEC (10-K, 10-Q, 8-K), données XBRL, actualités, APIs et données de marché.
 - **Exploitation** de ces documents grâce à un système **RAG** (Retrieval-Augmented Generation).
