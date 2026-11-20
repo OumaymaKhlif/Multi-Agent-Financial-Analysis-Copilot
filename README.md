@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📊 Multi-Agent Financial Analysis Copilot
+# FinCopilot
 
 **Plateforme d'analyse financière automatisée par IA agentique, RAG et validation humaine.**
 
