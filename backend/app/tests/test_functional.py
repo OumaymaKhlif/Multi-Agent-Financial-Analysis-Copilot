@@ -57,3 +57,52 @@ def test_evaluator_accepts_correct_number():
 # Les mots interdits doivent être détectés
 def test_forbidden_words():
     assert no_forbidden_words({"report": "croissance robuste"})["score"] == 0.0
+
+#  vérifie qu’une décision APPROVED_FOR_DRAFT contourne bien la validation humaine et génère directement le rapport.
+def test_supervisor_routes_approved_analysis():
+    from app.graph.workflow import after_supervisor
+
+    state = {
+        "supervisor_decision":
+            "DECISION: APPROVED_FOR_DRAFT\nJUSTIFICATION: Les chiffres correspondent."
+    }
+
+    assert after_supervisor(state) == "report_generator"
+
+# vérifie qu’une décision HUMAN_REVIEW_REQUIRED active correctement l’étape de validation humaine.
+def test_supervisor_routes_human_review():
+    from app.graph.workflow import after_supervisor
+
+    state = {
+        "supervisor_decision":
+            "DECISION: HUMAN_REVIEW_REQUIRED\nJUSTIFICATION: Un chiffre doit être vérifié."
+    }
+
+    assert after_supervisor(state) == "human_review"
+
+# Format markdown (**DECISION:**) : doit aussi déclencher la validation humaine
+def test_supervisor_routes_human_review_markdown():
+    from app.graph.workflow import after_supervisor
+    assert after_supervisor({"supervisor_decision": "**DECISION:** HUMAN_REVIEW_REQUIRED"}) == "human_review"
+
+
+# Décision absente ou incohérente : validation humaine (sécurité par défaut)
+def test_supervisor_missing_decision():
+    from app.graph.workflow import after_supervisor
+    assert after_supervisor({}) == "human_review"
+    assert after_supervisor({"supervisor_decision": "DECISION: whatever"}) == "human_review"
+    
+
+from app.graph.workflow import merge_passages
+
+
+# Deux requêtes qui retrouvent le même passage : un seul exemplaire conservé
+def test_merge_passages_removes_duplicates():
+    a = {"source": "10-K", "chunk_index": 1, "content": "x"}
+    b = {"source": "10-K", "chunk_index": 2, "content": "y"}
+    assert merge_passages([[a, b], [a]]) == [a, b]
+
+
+# Aucun résultat : liste vide
+def test_merge_passages_empty():
+    assert merge_passages([[], []]) == []

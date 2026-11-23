@@ -104,7 +104,8 @@ DEFAULT_Q = (
 # Appeler l'API et gérer les erreurs (timeout long : 6 agents)
 def call_api(path, payload):
     try:
-        r = requests.post(f"{API_URL}{path}", json=payload, timeout=300)
+        r = requests.post(f"{API_URL}{path}", json=payload, timeout=300,
+                  headers={"X-API-Key": os.getenv("API_KEY", "")})
         r.raise_for_status()
         return r.json()
     except requests.exceptions.RequestException as e:

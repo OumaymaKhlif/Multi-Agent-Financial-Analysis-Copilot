@@ -9,6 +9,10 @@ from psycopg.rows import dict_row
 # Importer le routeur du système multi-agents
 from app.api.analysis import router as analysis_router
 
+from fastapi import FastAPI, Depends
+from app.services.security import require_api_key
+
+
 # Créer l'application API
 app = FastAPI(title="Microsoft Financial Analysis API")
 
@@ -17,7 +21,7 @@ app.include_router(analysis_router)
 
 
 # Définir une route pour récupérer les analyses financières
-@app.get("/financial-analysis")
+@app.get("/financial-analysis", dependencies=[Depends(require_api_key)])
 def get_financial_analysis():
 
     # Se connecter à PostgreSQL avec les variables Docker

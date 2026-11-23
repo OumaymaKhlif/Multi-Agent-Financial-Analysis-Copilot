@@ -13,6 +13,9 @@ from app.rag.retriever import search_documents
 # Initialisation du MCP Server
 mcp = MCPServer("Financial Analysis Copilot")
 
+# Similarité minimale (0 à 1) : en dessous, le passage est jugé hors sujet
+MIN_SIMILARITY = float(os.getenv("MIN_SIMILARITY", "0.30"))
+
 
 # Connexion à PostgreSQL
 def get_connection():
@@ -32,7 +35,8 @@ def search_financial_documents(query: str, top_k: int = 3) -> str:
     """Search Microsoft financial documents using the RAG system."""
     # On cherche plus large puis on retire les chunks trop courts (sommaire, titres)
     results = search_documents(query, top_k * 4)
-    results = [r for r in results if len(r["content"]) >= 300][:top_k]
+    results = [r for r in results
+        if len(r["content"]) >= 300 and r["similarity"] >= MIN_SIMILARITY][:top_k]
     for r in results:
         r["content"] = r["content"][:600]
     return json.dumps(results, default=str)

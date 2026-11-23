@@ -9,7 +9,7 @@ services:
       POSTGRES_USER: copilot_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -21,23 +21,29 @@ services:
       - copilot_network
 
   n8n:
-    image: docker.n8n.io/n8nio/n8n:latest
+    image: docker.n8n.io/n8nio/n8n:2.47.7
     container_name: financial_n8n
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
     ports:
-      - "5678:5678"
+      - "127.0.0.1:5678:5678"
     volumes:
       - n8n_data:/home/node/.n8n
     networks:
       - copilot_network
 
   pgadmin:
-    image: dpage/pgadmin4:latest
+    image: dpage/pgadmin4:9.19
     container_name: financial_pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
-      - "5050:80"
+      - "127.0.0.1:5050:80"
     volumes:
       - pgadmin_data:/var/lib/pgadmin
     depends_on:
@@ -51,6 +57,14 @@ services:
 
     # Nom du conteneur
     container_name: financial_backend
+
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
     # Exposer l'API sur le port 8000
     ports:
@@ -78,6 +92,16 @@ services:
 
       N8N_WEBHOOK_URL: ${N8N_WEBHOOK_URL}
 
+      API_KEY: ${API_KEY}
+      REVIEWER_EMAIL: ${REVIEWER_EMAIL}
+
+      SEC_USER_AGENT: ${SEC_USER_AGENT}
+
+    # Cache du modèle Qwen (évite le retéléchargement)
+    volumes:
+      - hf_cache:/hf_cache
+      - ./infrastructure/postgres:/app/infrastructure/postgres:ro   # schéma SQL, lecture seule
+
     # Attendre que PostgreSQL soit prêt
     depends_on:
       database:
@@ -104,9 +128,17 @@ services:
     # Démarrer notre serveur MCP
     command: python -m app.mcp.server
 
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import socket; socket.create_connection(('localhost', 8001), 3)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s     # chargement du modèle Qwen
+
     # Exposer MCP sur le port 8001
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
 
     # Configuration de connexion PostgreSQL
     environment:
@@ -115,6 +147,9 @@ services:
       DB_NAME: financial_copilot
       DB_USER: copilot_user
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    # Cache du modèle Qwen partagé avec le backend
+    volumes:
+      - hf_cache:/hf_cache
 
     # Attendre que PostgreSQL soit prêt
     depends_on:
@@ -134,21 +169,25 @@ services:
       - copilot_network
 
   frontend:
-      build: ./frontend
-      container_name: financial_frontend
-      ports:
-        - "8501:8501"
-      environment:
-        API_URL: http://backend:8000
-      depends_on:
-        - backend
-      networks:
+    build: ./frontend
+    container_name: financial_frontend
+    restart: unless-stopped
+    ports:
+      - "8501:8501"
+    environment:
+      API_URL: http://backend:8000
+      API_KEY: ${API_KEY}
+    depends_on:
+      backend:
+        condition: service_healthy  # attendre que l'API soit prête
+    networks:
       - copilot_network
 
 volumes:
   postgres_data:
   n8n_data:
   pgadmin_data:
+  hf_cache:
 
 networks:
   copilot_network:

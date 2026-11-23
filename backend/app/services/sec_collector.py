@@ -2,11 +2,11 @@
 # Importer la bibliothèque requests pour effectuer des requêtes HTTP
 import requests
 
-# Importer les URLs et le User-Agent depuis le fichier de configuration
-from sec_config import (
-    SUBMISSIONS_URL,     # URL des déclarations réglementaires de Microsoft
-    COMPANY_FACTS_URL,   # URL des données financières XBRL de Microsoft
-    USER_AGENT           # Identification de notre application auprès de la SEC
+# Import absolu : fonctionne quel que soit le dossier d'exécution
+from app.services.sec_config import (
+    SUBMISSIONS_URL,     # URL des déclarations réglementaires
+    COMPANY_FACTS_URL,   # URL des données financières XBRL
+    USER_AGENT           # Identification auprès de la SEC
 )
 
 # Définir les en-têtes HTTP de la requête

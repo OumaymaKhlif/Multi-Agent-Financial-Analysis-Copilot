@@ -1,0 +1,14 @@
+# Surcharge de production : ferme tous les ports internes (seuls l'API et l'interface restent ouverts)
+services:
+  database:
+    ports: !reset []
+  pgadmin:
+    ports: !reset []
+  n8n:
+    ports: !reset []
+  mcp-server:
+    ports: !reset []
+
+
+# Lancement en production :
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d

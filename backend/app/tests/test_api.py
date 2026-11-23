@@ -34,7 +34,7 @@ def test_analysis_completed(monkeypatch):
     async def fake(question, thread_id):
         return {"report": "Rapport", "supervisor_decision": "DECISION: APPROVED_FOR_DRAFT"}
     monkeypatch.setattr(analysis_api, "run_financial_analysis", fake)
-    data = client.post("/analysis/", json={"question": "test"}).json()
+    data = client.post("/analysis/", json={"question": "Analyse le chiffre d'affaires de Microsoft"}).json()
     assert data["status"] == "COMPLETED" and data["report"] == "Rapport"
 
 
@@ -43,7 +43,7 @@ def test_analysis_pending_review(monkeypatch):
     async def fake(question, thread_id):
         return {"__interrupt__": [FakeInterrupt({"supervisor_decision": "HUMAN_REVIEW_REQUIRED"})]}
     monkeypatch.setattr(analysis_api, "run_financial_analysis", fake)
-    data = client.post("/analysis/", json={"question": "test"}).json()
+    data = client.post("/analysis/", json={"question": "Analyse le chiffre d'affaires de Microsoft"}).json()
     assert data["status"] == "PENDING_HUMAN_REVIEW"
     assert data["review_data"]["supervisor_decision"] == "HUMAN_REVIEW_REQUIRED"
 
@@ -70,3 +70,30 @@ def test_review_reject(monkeypatch):
 # Une requête sans question doit être refusée (erreur 422)
 def test_invalid_request():
     assert client.post("/analysis/", json={}).status_code == 422
+
+# Sans clé API, les routes protégées répondent 401
+def test_api_key_required():
+    app.dependency_overrides.clear()   # retirer le contournement pour ce test
+    assert client.post("/analysis/pdf", json={"report": "x"}).status_code == 401
+    assert client.get("/financial-analysis").status_code == 401
+
+# Question vide : refusée (422)
+def test_empty_question_rejected():
+    assert client.post("/analysis/", json={"question": ""}).status_code == 422
+
+
+# Question trop courte : refusée
+def test_short_question_rejected():
+    assert client.post("/analysis/", json={"question": "hello"}).status_code == 422
+
+
+# Action inconnue : refusée
+def test_invalid_review_action():
+    r = client.post("/analysis/abc/review", json={"action": "anything"})
+    assert r.status_code == 422
+
+
+# Rapport trop volumineux : refusé
+def test_pdf_report_too_large():
+    r = client.post("/analysis/pdf", json={"report": "x" * 100_001})
+    assert r.status_code == 422

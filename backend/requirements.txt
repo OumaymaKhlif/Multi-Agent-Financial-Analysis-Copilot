@@ -10,25 +10,11 @@ psycopg[binary]
 langchain                # Construire les composants du système RAG
 langchain-text-splitters # Découper les documents en chunks
 langchain-huggingface    # Utiliser les modèles Hugging Face avec LangChain
-sentence-transformers    # Générer des embeddings à partir des textes
 beautifulsoup4           # Extraire le texte des documents HTML
 requests                 # Télécharger les données depuis les API et sites web
 
 # Stockage et Recherche vectorielle
-pgvector                 
-
-# Modèles d'intelligence artificielle
-transformers>=4.51.0    
-
-
-# Définir PyPI comme dépot principal 
-# PyPI (Python Package Index) : c'est le dépôt officiel où Python télécharge les bibliothèques
---index-url https://pypi.org/simple
-
-# PyTorch avec accélération GPU NVIDIA (CUDA 12.6)
-# ajoute le dépôt de PyTorch compatible CUDA 12.6
---extra-index-url https://download.pytorch.org/whl/cu126
-torch==2.7.1+cu126       # Framework de calcul utilisé pour exécuter les modèles d'IA
+pgvector                     
 
 # Model Context Protocol (MCP)
 mcp[cli]>=2,<3           
@@ -48,3 +34,12 @@ markdown
 
 pytest
 httpx
+
+# Pool de connexions PostgreSQL (nécessaire au checkpointer)
+psycopg[binary,pool]
+
+# Checkpointer LangGraph persistant dans PostgreSQL
+# Le Checkpointer dans LangGraph sert à sauvegarder l'état (state) d'un agent IA au fur et à mesure de son exécution.
+# Il permet notamment de reprendre une conversation ou un workflow sans repartir de zéro
+# exemple dans notre cas : Exécution de l'action après la validation humaine 
+langgraph-checkpoint-postgres

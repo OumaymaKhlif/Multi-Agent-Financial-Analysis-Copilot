@@ -6,10 +6,12 @@ from pgvector import Vector
 from langchain_huggingface import HuggingFaceEmbeddings
 from pgvector.psycopg import register_vector
 
+import torch
+
 # Charger Qwen sur le GPU une seule fois
 embeddings_model = HuggingFaceEmbeddings(
-    model_name="Qwen/Qwen3-Embedding-0.6B",
-    model_kwargs={"device": "cuda"},
+    model_name=os.getenv("EMBEDDING_MODEL", "Qwen/Qwen3-Embedding-0.6B"),
+    model_kwargs={"device": "cuda" if torch.cuda.is_available() else "cpu"},
     encode_kwargs={"normalize_embeddings": True}
 )
 
@@ -43,6 +45,8 @@ def search_documents(query: str, top_k: int = 5):
         register_vector(connection)
 
         # Rechercher les chunks par similarité cosinus
+        # <=> est l'opérateur pgvector de distance cosinus entre le vecteur du passage et celui de la question
+        # la base (pgvector) qui calcule le score, mais le seuil, lui, est appliqué par le code Python du serveur MCP."
         results = connection.execute(
             """
             SELECT
