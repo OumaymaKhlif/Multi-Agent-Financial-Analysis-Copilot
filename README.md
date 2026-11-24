@@ -390,24 +390,6 @@ Les entrées sont validées (question de 10 à 4000 caractères, action `approve
 ```bash
 docker compose exec backend python -m pytest app/tests -v
 ```
-
-**95 tests :**
-
-| Fichier | Tests | Couverture |
-| --- | --- | --- |
-| `test_functional.py` | 12 | Ratios KPI, PDF, évaluateurs, routage du Supervisor, fusion des passages RAG |
-| `test_financial_metrics.py` | 8 | Moyennes, valeurs manquantes, divisions par zéro, capitaux négatifs, incohérences |
-| `test_api.py` | 12 | Routes, clé API, validation des entrées (422) |
-| `test_decision_api.py` | 9 | Tokens, usage unique, échec de reprise, échappement HTML, webhook n8n, délai LLM |
-| `test_security.py` | 9 | Tokens signés : falsifiés, expirés, mal formés, liés à l'action |
-| `test_database.py` | 5 | **PostgreSQL réel** : doublons, vue KPI, usage unique, reprise après redémarrage |
-| `test_prompt_safety.py` | 16 | Détection d'injections, texte légitime non bloqué, balisage |
-| `test_ingest.py` | 2 | Sélection du dernier dépôt SEC |
-| `test_imports.py` | 21 | Import de chaque module du backend |
-| `test_pdf_long.py` | 1 | PDF d'un long rapport |
-
-Les tests de base de données créent une base temporaire à partir de `init.sql` : la base de travail n'est jamais modifiée.
-
 ---
 
 ## 📄 Avertissement
