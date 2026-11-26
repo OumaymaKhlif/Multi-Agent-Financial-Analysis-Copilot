@@ -204,7 +204,7 @@ Dépôt SEC le plus récent (API submissions : 10-K, 10-Q, 8-K)
 
 ## ⚙️ Automatisations n8n
 
-Trois workflows sont fournis dans [`workflows/n8n/`](workflows/n8n/) :
+Trois workflows sont fournis dans [`n8n/`](n8n/) :
 
 | Workflow | Déclencheur | Rôle |
 | --- | --- | --- |
